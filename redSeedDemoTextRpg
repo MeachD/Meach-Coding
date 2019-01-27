@@ -1,0 +1,403 @@
+# Pyton Text Rpg
+# Name: Red Seed
+
+import cmd
+import textwrap
+import sys
+import os
+import time
+import random
+
+screen_width = 100
+
+##### player setup #####
+
+
+class player:
+    def __init__(self):
+        self.name = ''
+        self.job = ''
+        self.hp = 0
+        self.mp = 0
+        self.status_effects = []
+        self.location = 'start'
+        self.game_over = False
+
+
+myPlayer = player()
+
+#### Title Screen ######
+
+
+def title_screen_selections():
+    option = input('> ')
+    if option.lower() == "play":
+        start_game()  # placeholder until written
+    elif option.lower() == 'help':
+        help_menu()
+    elif option.lower() == 'quit':
+        sys.exit()
+    while option.lower() not in ['play', 'help', 'quit']:
+        print('Please enter a valid command.')
+        option = input("> ")
+        if option.lower() == "play":
+            start_game()  # placeholder until written
+        elif option.lower() == 'help':
+            help_menu()
+        elif option.lower() == 'quit':
+            sys.exit()
+
+
+def title_screen():
+    os.system('cls')
+    print('########################')
+    print('# Welcome to Red Seed! #')
+    print('########################')
+    print('       - Play -         ')
+    print('       - Help -         ')
+    print('       - Quit -         ')
+    title_screen_selections()
+
+
+def help_menu():
+    print('########################')
+    print('# Welcome to Red Seed! #')
+    print('########################')
+    print('- Use up, down, left, right to move -')
+    print('- Type your commands to do them -')
+    print('- Use "look" to inspect somthing -')
+    title_screen_selections()
+
+    ###### MAP ########
+
+
+"""
+
+a1 a2  a3  a4
+-------------
+|  |  |  |  | a4
+-------------
+|  |  |  |  | b4..............
+-------------
+|  |  |  |  |
+-------------
+|  |  |  |  |
+-------------
+"""
+
+ZONENAME = ''
+DESCRIPTION = 'description'
+EXAMINATION = 'examine'
+SOLVED = False
+UP = 'up', 'north'
+DOWN = 'down', 'south'
+LEFT = 'left', 'west'
+RIGHT = 'right', 'east'
+
+solved_places = {'a1': False, 'a2': False, 'a3': False, 'a4': False,
+                 'b1': False, 'b2': False, 'b3': False, 'b4': False,
+                 'c1': False, 'c2': False, 'c3': False, 'c4': False,
+                 'd1': False, 'd2': False, 'd3': False, 'd4': False,
+                 }
+zonemap = {
+    'a1': {
+        ZONENAME: "Town Store",
+        DESCRIPTION: 'Town Store, a strange smell assults your nose.',
+        EXAMINATION: 'This is the town store, the inventory includes a rat that clearly died trying to eat the rotting food avaiable for sale, and plates of shit the shop keeper keeps insisting is fresh.  With discust you decide its time to move on.',
+        SOLVED: False,
+        UP: '',
+        DOWN: 'b1',
+        LEFT: '',
+        RIGHT: 'a2',
+    },
+    'a2': {
+        ZONENAME: "Town Enterance",
+        DESCRIPTION: 'You enter the shabbyest more revolting town you have ever seen',
+        EXAMINATION: 'The putrid stink rolliing off this town makes you almsot sick.  The look of the town is much worse than the smell',
+        SOLVED: False,
+        UP: '',
+        DOWN: 'b2',
+        LEFT: 'a1',
+        RIGHT: 'a3',
+
+    },
+    'a3': {
+        ZONENAME: "Town Smith",
+        DESCRIPTION: 'You see a deformed blacksmith struggling to work steel.',
+        EXAMINATION: 'The blacksmith overheats the steel buring the carbon out of it turing it to iron and introducing impuritues.  With a stupid smile he starts working the ruined steel.  He triumfantly holds up a lump of crap and starts slurring "knife" as he gives you the stupidest smile you have ever seen.  You decide its a marical that he hasent burnt himself to death and decide to move on.',
+        SOLVED: False,
+        UP: '',
+        DOWN: 'b3',
+        LEFT: 'a2',
+        RIGHT: 'a4',
+    },
+    'a4': {
+        ZONENAME: "Town Hall",
+        DESCRIPTION: 'The town hall is decrepid and pathetic. Rotting wood with rotting minds within.  A true hick structure.',
+        EXAMINATION: 'You see filthy people talking about the benifits of sleeping with their sister to keep the blood line pure.  Deformed ugly people reside within.  One of the villagers gives you a rot filled smile with a truly vapid look on their face.',
+        SOLVED: False,
+        UP: '',
+        DOWN: 'b2',
+        LEFT: 'a1',
+        RIGHT: '',
+    },
+    'b1': {
+        ZONENAME: "",
+        DESCRIPTION: 'description',
+        EXAMINATION: 'examine',
+        SOLVED: False,
+        UP: 'a1',
+        DOWN: 'c1',
+        LEFT: '',
+        RIGHT: 'b2',
+    },
+    'b2': {
+        ZONENAME: 'Home',
+        DESCRIPTION: 'This is your home!',
+        EXAMINATION: 'Your home looks the same as always.  There is a neatly made bed in the corner, and a cast iron \n fireplace next to it. A small house with familiar smells.',
+        SOLVED: False,
+        UP: 'a2',
+        DOWN: 'c2',
+        LEFT: 'b1',
+        RIGHT: 'b3',
+    },
+    'b3': {
+        ZONENAME: "",
+        DESCRIPTION: 'description',
+        EXAMINATION: 'examine',
+        SOLVED: False,
+        UP: 'up',
+        DOWN: 'down',
+        LEFT: 'left',
+        RIGHT: 'right',
+    },
+    'b4': {
+        ZONENAME: "",
+        DESCRIPTION: 'description',
+        EXAMINATION: 'examine',
+        SOLVED: False,
+        UP: 'up',
+        DOWN: 'down',
+        LEFT: 'left',
+        RIGHT: 'right',
+    },
+    'c1': {
+        ZONENAME: "",
+        DESCRIPTION: 'description',
+        EXAMINATION: 'examine',
+        SOLVED: False,
+        UP: 'up',
+        DOWN: 'down',
+        LEFT: 'left',
+        RIGHT: 'right',
+    },
+    'c2': {
+        ZONENAME: "",
+        DESCRIPTION: 'description',
+        EXAMINATION: 'examine',
+        SOLVED: False,
+        UP: 'up',
+        DOWN: 'down',
+        LEFT: 'left',
+        RIGHT: 'right',
+    },
+    'c4': {
+        ZONENAME: "",
+        DESCRIPTION: 'description',
+        EXAMINATION: 'examine',
+        SOLVED: False,
+        UP: 'up',
+        DOWN: 'down',
+        LEFT: 'left',
+        RIGHT: 'right',
+    },
+    'd1': {
+        ZONENAME: "",
+        DESCRIPTION: 'description',
+        EXAMINATION: 'examine',
+        SOLVED: False,
+        UP: 'up',
+        DOWN: 'down',
+        LEFT: 'left',
+        RIGHT: 'right',
+    },
+    'd2': {
+        ZONENAME: "",
+        DESCRIPTION: 'description',
+        EXAMINATION: 'examine',
+        SOLVED: False,
+        UP: 'up',
+        DOWN: 'down',
+        LEFT: 'left',
+        RIGHT: 'right',
+    },
+    'd3': {
+        ZONENAME: "",
+        DESCRIPTION: 'description',
+        EXAMINATION: 'examine',
+        SOLVED: False,
+        UP: 'up',
+        DOWN: 'down',
+        LEFT: 'left',
+        RIGHT: 'right',
+    },
+    'd4': {
+        ZONENAME: "",
+        DESCRIPTION: 'description',
+        EXAMINATION: 'examine',
+        SOLVED: False,
+        UP: 'up',
+        DOWN: 'down',
+        LEFT: 'left',
+        RIGHT: 'right',
+    },
+
+}
+
+#### Game Interactivity######
+
+
+def print_location():
+    print('\n' + ('#' * (4 + len(myPlayer.location))))
+    print('# ' + myPlayer.location.upper() + ' #')
+    print('# ' + zonemap[myPlayer.position][DESCRIPTION] + ' #')
+    print('\n' + ('#' * (4 + len(myPlayer.location))))
+
+
+def prompt():
+    print("\n" + '===========================================')
+    print('< What would you like to do?')
+    action = input('> ')
+    acceptable_actions = ('move', 'go', 'travel', 'walk', 'quit', 'examine', 'inspect', 'interact', 'look')
+    while action.lower() not in acceptable_actions:
+        print('Unknown action, try again.\n')
+        action = input('> ')
+    if action.lower() == 'quit':
+        sys.exit()
+    elif action.lower() in ['move', 'go', 'travel', 'walk']:
+        player_move(action.lower())
+    elif action.lower() in ['examine', 'inspect', 'interact', 'look']:
+        player_examine(action.lower())
+
+
+def player_move(myAction):
+    ask = 'Where would you like to move to?\n'
+    dest = input(ask)
+    if dest == 'up' or 'north':
+        destination = zonemap[myPlayer.location][UP]
+        movement_handler(destination)
+    elif dest == 'down' or 'south':
+        destination = zonemap[myPlayer.location][DOWN]
+    elif dest == 'left' or 'west':
+        destination = zonemap[myPlayer.location][LEFT]
+    elif dest == 'right' or 'east':
+        destination = zonemap[myPlayer.location][RIGHT]
+
+
+def movement_handler(destination):
+    print('\n' + 'You have moved to the ' + destination + '.')
+    myPlayer.location = destination
+    print_location()
+
+
+def player_examine(action):
+    if zonemap[myPlayer.location][SOLVED] == True:
+        print('\n You have already exasted this zone.')
+    else:
+        print('You can trigger a puzzle here')
+
+
+######### GAME FUNTIONALITY ##########
+def start_game():
+    return
+
+
+def main_game_loop():
+    while myPlayer.game_over is False:
+        prompt()
+    # here handle if puzzles have been solved, boss defeated, explored evorything, ect.
+
+
+def setup_game():
+    os.system('cls')
+
+    ### Name collecting ###
+    question1 = "Hello, what's your name?\n"
+    for character in question1:
+        sys.stdout.write(character)
+        sys.stdout.flush()
+        time.sleep(0.05)
+    player_name = input("> ")
+    myplayer.name = player_name
+
+    ### JOB HANDDLING ###
+    question2 = "Hello, what roll do you want to play?\n"
+    question2added = "You can play a warrior a priest or a mage.\n"
+    for character in question2:
+        sys.stdout.write(character)
+        sys.stdout.flush()
+        time.sleep(0.05)
+    for character in question2added:
+        sys.stdout.write(character)
+        sys.stdout.flush()
+        time.sleep(0.01)
+    player_job = input("> ")
+    valid_jobs = ['warrior', 'mage', 'priest']
+    if player_job.lower() in valid_jobs:
+        myplayer.job = player.job
+        print("You are now a " + player_job + "!\n")
+    while player_job.lower() not in valid_jobs:
+        player_job = input("> ")
+        if player_job.lower() in valid_jobs:
+            myplayer.job = player.job
+            print("You are now a " + player_job + "!\n")
+
+    # Player starting stats
+    if myPlayer.job is 'warrior':
+        self.hp = 120
+        self.mp = 20
+    elif myPlayer.job is 'mage':
+        self.hp = 40
+        self.mp = 120
+    elif myPlayer.job is 'priest':
+        self.hp = 60
+        self.mp = 60
+
+    # INTRODUCTION
+    question3 = "Welcome, " + player_name + "the" + player_job + ".\n"
+    for character in question1:
+        sys.stdout.write(character)
+        sys.stdout.flush()
+        time.sleep(0.05)
+    player_name = input("> ")
+    myPlayer.name = player_name
+
+    speech1 = "Welcome to this fantasy world!"
+    speech2 = "I hope it greets you well!"
+    speech3 = "Just make sure you dont get to lost..."
+    speech4 = "Heheheh..."
+    for character in speech1:
+        sys.stdout.write(character)
+        sys.stdout.flush()
+        time.sleep(0.03)
+    for character in speech2:
+        sys.stdout.write(character)
+        sys.stdout.flush()
+        time.sleep(0.03)
+    for character in speech3:
+        sys.stdout.write(character)
+        sys.stdout.flush()
+        time.sleep(0.1)
+    for character in speech4:
+        sys.stdout.write(character)
+        sys.stdout.flush()
+        time.sleep(0.2)
+
+    os.system('cls')
+    print("############################")
+    print("#     Let's Start now!     #")
+    print("############################")
+    main_game_loop()
+
+
+title_screen()
